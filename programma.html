@@ -37,12 +37,25 @@
     var nanonautIsInDeLucht = false;
     var nanonautFrameNr = 0;
     var spelFrameTeller = 0;
-
     var cameraX = 0;
-    var cameraY = 0;
 
     var achtergrondAfbeelding = new Image();
     achtergrondAfbeelding.src = 'achtergrond.png';
+    var bosje1Afbeelding = new Image();
+    bosje1Afbeelding.src = 'bosje1.png';
+    var bosje2Afbeelding = new Image();
+    bosje2Afbeelding.src = 'bosje2.png';
+
+    var bosjesData = [{x: 550,
+        y:100,
+        image: bosje1Afbeelding
+    }, {x: 750,
+        y:90,
+        image: bosje2Afbeelding}
+    ]
+
+    var cameraY = 0;
+
 
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
@@ -103,6 +116,13 @@
                 }
             }
         }
+
+        // update bosjes
+        for (let i = 0; i < bosjesData.length; i++) {
+            if (bosjesData[i].x - cameraX < - CANVAS_BREEDTE) {
+                bosjesData[i].x += 2 * CANVAS_BREEDTE + 150;
+            }
+        }
     }
     // TEKENEN
     function draw() {
@@ -117,6 +137,11 @@
         //teken de grond
         c.fillStyle = 'forestgreen';
         c.fillRect(0, GROND_Y -40, CANVAS_BREEDTE, CANVAS_HOOGTE - GROND_Y + 40)
+
+        for (var i=0; i<bosjesData.length; i++) {
+
+            c.drawImage(bosjesData[i].image, bosjesData[i].x - cameraX, GROND_Y - bosjesData[i].y - cameraY)
+        }
 
         // teken de nanonaut
         var nanonautSpriteSheetRij = Math.floor(nanonautFrameNr / NANONAUT_FRAMES_PER_RIJ);
