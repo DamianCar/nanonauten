@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nanonauten in actie</title>
+</head>
+<body>
+
+<script>
+    // CONSTANTEN
+    var CANVAS_BREEDTE = 800;
+    var CANVAS_HOOGTE = 600;
+    var NANONAUT_BREEDTE = 181;
+    var NANONAUT_HOOGTE = 229;
+    var GROND_Y = 540;
+    var NANONAUT_Y_VERSNELLING = 1;
+    var NANONAUT_X_SNELHEID = 2;
+    var SPATIEBALK_CODE = 32;
+    var NANONAUT_SPRONG_SNELHEID = 20;
+    var ACHTERGROND_BREEDTE = 1000;
+    var NANONAUT_FRAMES_PER_RIJ = 5;
+    var NANONAUT_NR_ANIMATIEFRAMES = 7;
+    var NANONAUT_ANIMATIE_SNELHEID = 3;
+
+    // INSTELLINGEN
+    var canvas = document.createElement('canvas');
+    var c = canvas.getContext('2d');
+    canvas.width = CANVAS_BREEDTE;
+    canvas.height = CANVAS_HOOGTE;
+    document.body.appendChild(canvas);
+
+    var nanonautAfbeelding = new Image();
+    nanonautAfbeelding.src = 'geanimeerdeNanonaut.png';
+    var nanonautX = CANVAS_BREEDTE / 2;
+    var nanonautY = GROND_Y - NANONAUT_HOOGTE;
+    var nanonautYSnelheid = 0;
+    var spatieBalkIsIngedrukt = false;
+    var nanonautIsInDeLucht = false;
+    var nanonautFrameNr = 0;
+    var spelFrameTeller = 0;
+
+    var cameraX = 0;
+    var cameraY = 0;
+
+    var achtergrondAfbeelding = new Image();
+    achtergrondAfbeelding.src = 'achtergrond.png';
+
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('load', start);
+
+    function start() {
+        window.requestAnimationFrame(hoofdLus);
+    }
+
+    // HOOLFD-LUS
+    function hoofdLus() {
+        update();
+        draw();
+        window.requestAnimationFrame(hoofdLus);
+    }
+    // SPELER-HANDELINGEN
+
+    function onKeyDown(event) {
+        if (event.keyCode === SPATIEBALK_CODE) {
+            spatieBalkIsIngedrukt = true;
+        }
+    }
+
+    function onKeyUp(event) {
+        if (event.keyCode === SPATIEBALK_CODE) {
+            spatieBalkIsIngedrukt = false;
+        }
+    }
+
+    // UPDATEN
+    function update() {
+        nanonautY = nanonautY + nanonautYSnelheid;
+        nanonautYSnelheid = nanonautYSnelheid + NANONAUT_Y_VERSNELLING;
+
+        nanonautX = nanonautX + NANONAUT_X_SNELHEID;
+
+        if (nanonautY > (GROND_Y - NANONAUT_HOOGTE)) {
+            nanonautY = GROND_Y - NANONAUT_HOOGTE;
+            nanonautYSnelheid = 0;
+            nanonautIsInDeLucht = false;
+        }
+
+        if (spatieBalkIsIngedrukt && !nanonautIsInDeLucht) {
+            nanonautYSnelheid = -NANONAUT_SPRONG_SNELHEID;
+            nanonautIsInDeLucht = true;
+        }
+
+        // update de camera
+        cameraX = nanonautX - 150
+
+        if (!nanonautIsInDeLucht) {
+            spelFrameTeller = spelFrameTeller + 1;
+
+            if (spelFrameTeller % NANONAUT_ANIMATIE_SNELHEID === 0) {
+                nanonautFrameNr = nanonautFrameNr + 1;
+                if (nanonautFrameNr >= NANONAUT_NR_ANIMATIEFRAMES) {
+                    nanonautFrameNr = 0;
+                }
+            }
+        }
+    }
+    // TEKENEN
+    function draw() {
+        //teken de lucht
+        c.fillStyle = 'LightSkyBlue';
+        c.fillRect(0, 0, CANVAS_BREEDTE, GROND_Y - 40);
+
+        //teken de achtergrond
+        var achtergrondX = -(cameraX % ACHTERGROND_BREEDTE)
+        c.drawImage(achtergrondAfbeelding, achtergrondX, -210)
+        c.drawImage(achtergrondAfbeelding, achtergrondX + ACHTERGROND_BREEDTE, -210)
+        //teken de grond
+        c.fillStyle = 'forestgreen';
+        c.fillRect(0, GROND_Y -40, CANVAS_BREEDTE, CANVAS_HOOGTE - GROND_Y + 40)
+
+        // teken de nanonaut
+        var nanonautSpriteSheetRij = Math.floor(nanonautFrameNr / NANONAUT_FRAMES_PER_RIJ);
+        var nanonautSpriteSheetKolom = nanonautFrameNr % NANONAUT_FRAMES_PER_RIJ;
+        var nanonautSpriteSheetX = nanonautSpriteSheetKolom * NANONAUT_BREEDTE;
+        var nanonautSpriteSheetY = nanonautSpriteSheetRij * NANONAUT_HOOGTE;
+        c.drawImage(nanonautAfbeelding, nanonautSpriteSheetX, nanonautSpriteSheetY,
+            NANONAUT_BREEDTE, NANONAUT_HOOGTE, nanonautX - cameraX, nanonautY - cameraY,
+            NANONAUT_BREEDTE, NANONAUT_HOOGTE)
+    }
+
+</script>
+</body>
+</html>
