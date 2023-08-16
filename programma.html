@@ -46,13 +46,7 @@
     var bosje2Afbeelding = new Image();
     bosje2Afbeelding.src = 'bosje2.png';
 
-    var bosjesData = [{x: 550,
-        y:100,
-        image: bosje1Afbeelding
-    }, {x: 750,
-        y:90,
-        image: bosje2Afbeelding}
-    ]
+    var bosjesData = genereerBosjes();
 
     var cameraY = 0;
 
@@ -63,6 +57,27 @@
 
     function start() {
         window.requestAnimationFrame(hoofdLus);
+    }
+
+    function genereerBosjes() {
+        var gegenereerdeBosjesData =[];
+        var bosjeX = 0;
+        while (bosjeX < (2 * CANVAS_BREEDTE)) {
+            var bosjeAfbeelding;
+            if (Math.random() > 0.5) {
+                bosjeAfbeelding = bosje1Afbeelding
+            } else {
+                bosjeAfbeelding = bosje2Afbeelding
+            }
+            gegenereerdeBosjesData.push({
+                x: bosjeX,
+                y: 80 + Math.random() * 20,
+                image: bosjeAfbeelding
+            })
+            bosjeX += 150 + Math.random()*200
+        }
+
+        return gegenereerdeBosjesData;
     }
 
     // HOOLFD-LUS
