@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="nl">
 <head>
     <title>Nanonauten in actie</title>
 </head>
@@ -7,48 +7,78 @@
 
 <script>
     // CONSTANTEN
-    var CANVAS_BREEDTE = 800;
-    var CANVAS_HOOGTE = 600;
-    var NANONAUT_BREEDTE = 181;
-    var NANONAUT_HOOGTE = 229;
-    var GROND_Y = 540;
-    var NANONAUT_Y_VERSNELLING = 1;
-    var NANONAUT_X_SNELHEID = 2;
-    var SPATIEBALK_CODE = 32;
-    var NANONAUT_SPRONG_SNELHEID = 20;
-    var ACHTERGROND_BREEDTE = 1000;
-    var NANONAUT_FRAMES_PER_RIJ = 5;
-    var NANONAUT_NR_ANIMATIEFRAMES = 7;
-    var NANONAUT_ANIMATIE_SNELHEID = 3;
+    const CANVAS_BREEDTE = 800;
+    const CANVAS_HOOGTE = 600;
+    const NANONAUT_BREEDTE = 181;
+    const NANONAUT_HOOGTE = 229;
+    const GROND_Y = 540;
+    const NANONAUT_Y_VERSNELLING = 1;
+    const NANONAUT_X_SNELHEID = 2;
+    const SPATIEBALK_CODE = 32;
+    const NANONAUT_SPRONG_SNELHEID = 20;
+    const ACHTERGROND_BREEDTE = 1000;
+    const NANONAUT_NR_ANIMATIEFRAMES = 7;
+    const NANONAUT_ANIMATIE_SNELHEID = 3;
+    const ROBOT_NR_ANIMATIEFRAMES = 9;
+    const ROBOT_ANIMATIE_SNELHEID = 5;
+    const ROBOT_BREEDTE = 141;
+    const ROBOT_HOOGTE = 139;
+    const ROBOT_X_SNELHEID = 4;
+    const MIN_AFSTAND_TUSSEN_ROBOTS = 400;
+    const MAX_AFSTAND_TUSSEN_ROBOTS = 1200;
+    const MAX_ACTIEVE_ROBOTS = 3;
 
     // INSTELLINGEN
-    var canvas = document.createElement('canvas');
-    var c = canvas.getContext('2d');
+    let canvas = document.createElement('canvas');
+    let c = canvas.getContext('2d');
     canvas.width = CANVAS_BREEDTE;
     canvas.height = CANVAS_HOOGTE;
     document.body.appendChild(canvas);
 
-    var nanonautAfbeelding = new Image();
+    // afbeeldingen loaden
+    let nanonautAfbeelding = new Image();
     nanonautAfbeelding.src = 'geanimeerdeNanonaut.png';
-    var nanonautX = CANVAS_BREEDTE / 2;
-    var nanonautY = GROND_Y - NANONAUT_HOOGTE;
-    var nanonautYSnelheid = 0;
-    var spatieBalkIsIngedrukt = false;
-    var nanonautIsInDeLucht = false;
-    var nanonautFrameNr = 0;
-    var spelFrameTeller = 0;
-    var cameraX = 0;
-
-    var achtergrondAfbeelding = new Image();
+    let achtergrondAfbeelding = new Image();
     achtergrondAfbeelding.src = 'achtergrond.png';
-    var bosje1Afbeelding = new Image();
+    let bosje1Afbeelding = new Image();
     bosje1Afbeelding.src = 'bosje1.png';
-    var bosje2Afbeelding = new Image();
+    let bosje2Afbeelding = new Image();
     bosje2Afbeelding.src = 'bosje2.png';
+    let robotAfbeelding = new Image();
+    robotAfbeelding.src = 'geanimeerdeRobot.png';
 
-    var bosjesData = genereerBosjes();
+    let nanonoutSpriteSheet = {
+        nrFramesPerRij: 5,
+        spriteWidth: NANONAUT_BREEDTE,
+        spriteHeight: NANONAUT_HOOGTE,
+        image: nanonautAfbeelding
+    };
 
-    var cameraY = 0;
+    let robotSpriteSheet = {
+        nrFramesPerRij: 3,
+        spriteWidth: ROBOT_BREEDTE,
+        spriteHeight: ROBOT_HOOGTE,
+        image: robotAfbeelding
+    };
+
+    let nanonautX = CANVAS_BREEDTE / 2;
+    let nanonautY = GROND_Y - NANONAUT_HOOGTE;
+    let nanonautYSnelheid = 0;
+    let spatieBalkIsIngedrukt = false;
+    let nanonautIsInDeLucht = false;
+    let nanonautFrameNr = 0;
+    let spelFrameTeller = 0;
+    let cameraX = 0;
+
+    let robotData = [{
+        x: 1200,
+        y: GROND_Y - ROBOT_HOOGTE,
+        frameNr: 0
+    }];
+
+    let bosjesData = genereerBosjes();
+
+    let cameraY = 0;
 
 
     window.addEventListener('keydown', onKeyDown)
@@ -86,14 +116,13 @@
         draw();
         window.requestAnimationFrame(hoofdLus);
     }
-    // SPELER-HANDELINGEN
 
+    // SPELER-HANDELINGEN
     function onKeyDown(event) {
         if (event.keyCode === SPATIEBALK_CODE) {
             spatieBalkIsIngedrukt = true;
         }
     }
-
     function onKeyUp(event) {
         if (event.keyCode === SPATIEBALK_CODE) {
             spatieBalkIsIngedrukt = false;
@@ -120,10 +149,9 @@
 
         // update de camera
         cameraX = nanonautX - 150
+        spelFrameTeller = spelFrameTeller + 1;
 
         if (!nanonautIsInDeLucht) {
-            spelFrameTeller = spelFrameTeller + 1;
-
             if (spelFrameTeller % NANONAUT_ANIMATIE_SNELHEID === 0) {
                 nanonautFrameNr = nanonautFrameNr + 1;
                 if (nanonautFrameNr >= NANONAUT_NR_ANIMATIEFRAMES) {
@@ -138,6 +166,38 @@
                 bosjesData[i].x += 2 * CANVAS_BREEDTE + 150;
             }
         }
+
+        // update robots
+        updateRobots();
+    }
+    function updateRobots() {
+        for (let i = 0; i < robotData.length; i++) {
+            robotData[i].x -= ROBOT_X_SNELHEID;
+            if (spelFrameTeller % ROBOT_ANIMATIE_SNELHEID === 0) {
+                robotData[i].frameNr += 1;
+                if (robotData[i].frameNr >= ROBOT_NR_ANIMATIEFRAMES) {
+                    robotData[i].frameNr = 0;
+                }
+            }
+        }
+        let robotIndex = 0;
+        while (robotIndex < robotData.length) {
+            if (robotData[robotIndex].x < cameraX - ROBOT_BREEDTE) {
+                robotData.splice(robotIndex, 1);
+            } else {
+                robotIndex += 1;
+            }
+        }
+        if (robotData.length < MAX_ACTIEVE_ROBOTS) {
+            const laatsteRobotX = robotData[robotData.length - 1].x;
+            const nieuweRobotX = laatsteRobotX + MIN_AFSTAND_TUSSEN_ROBOTS + Math.random() * (
+                MAX_AFSTAND_TUSSEN_ROBOTS - MIN_AFSTAND_TUSSEN_ROBOTS)
+            robotData.push({
+                x: nieuweRobotX,
+                y: GROND_Y - ROBOT_HOOGTE,
+                frameNr: 0
+            });
+        }
     }
     // TEKENEN
     function draw() {
@@ -146,26 +206,38 @@
         c.fillRect(0, 0, CANVAS_BREEDTE, GROND_Y - 40);
 
         //teken de achtergrond
-        var achtergrondX = -(cameraX % ACHTERGROND_BREEDTE)
+        const achtergrondX = -(cameraX % ACHTERGROND_BREEDTE)
         c.drawImage(achtergrondAfbeelding, achtergrondX, -210)
         c.drawImage(achtergrondAfbeelding, achtergrondX + ACHTERGROND_BREEDTE, -210)
+
         //teken de grond
         c.fillStyle = 'forestgreen';
         c.fillRect(0, GROND_Y -40, CANVAS_BREEDTE, CANVAS_HOOGTE - GROND_Y + 40)
 
-        for (var i=0; i<bosjesData.length; i++) {
-
+        // teken de bosjes
+        for (let i=0; i<bosjesData.length; i++) {
             c.drawImage(bosjesData[i].image, bosjesData[i].x - cameraX, GROND_Y - bosjesData[i].y - cameraY)
         }
 
+        // teken de robots
+        for (let i=0; i<robotData.length; i++) {
+            tekenGeanimeerdeSprite(robotData[i].x - cameraX, robotData[i].y - cameraY,
+                robotData[i].frameNr, robotSpriteSheet)
+        }
+
         // teken de nanonaut
-        var nanonautSpriteSheetRij = Math.floor(nanonautFrameNr / NANONAUT_FRAMES_PER_RIJ);
-        var nanonautSpriteSheetKolom = nanonautFrameNr % NANONAUT_FRAMES_PER_RIJ;
-        var nanonautSpriteSheetX = nanonautSpriteSheetKolom * NANONAUT_BREEDTE;
-        var nanonautSpriteSheetY = nanonautSpriteSheetRij * NANONAUT_HOOGTE;
-        c.drawImage(nanonautAfbeelding, nanonautSpriteSheetX, nanonautSpriteSheetY,
-            NANONAUT_BREEDTE, NANONAUT_HOOGTE, nanonautX - cameraX, nanonautY - cameraY,
-            NANONAUT_BREEDTE, NANONAUT_HOOGTE)
+        tekenGeanimeerdeSprite(nanonautX - cameraX, nanonautY - cameraY,
+            nanonautFrameNr, nanonoutSpriteSheet)
+    }
+
+    function tekenGeanimeerdeSprite(schermX, schermY, frameNr, spriteSheet) {
+        const spriteSheetRij =  Math.floor(frameNr / spriteSheet.nrFramesPerRij);
+        const spriteSheetKolom = frameNr % spriteSheet.nrFramesPerRij;
+        const spriteSheetX = spriteSheetKolom * spriteSheet.spriteWidth;
+        const spriteSheetY = spriteSheetRij * spriteSheet.spriteHeight;
+        c.drawImage(spriteSheet.image, spriteSheetX, spriteSheetY,
+            spriteSheet.spriteWidth, spriteSheet.spriteHeight,
+            schermX, schermY, spriteSheet.spriteWidth, spriteSheet.spriteHeight)
     }
 
 </script>
