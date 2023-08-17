@@ -27,6 +27,8 @@
     const MIN_AFSTAND_TUSSEN_ROBOTS = 400;
     const MAX_AFSTAND_TUSSEN_ROBOTS = 1200;
     const MAX_ACTIEVE_ROBOTS = 3;
+    const SCHERMSCHUD_RADIUS = 16;
+    const NANONAUT_MAX_GEZONDHEID = 100;
 
     // INSTELLINGEN
     let canvas = document.createElement('canvas');
@@ -68,7 +70,10 @@
     let nanonautIsInDeLucht = false;
     let nanonautFrameNr = 0;
     let spelFrameTeller = 0;
+    let nanonautGezondheid = NANONAUT_MAX_GEZONDHEID;
     let cameraX = 0;
+    let nanonautOffset = 0;
+    let nanonautOffsetDelta = 0;
 
     let robotData = [{
         x: 1200,
@@ -80,6 +85,21 @@
 
     let cameraY = 0;
 
+    const nanonautBotsingRechthoek = {
+        xOffset: 60,
+        yOffset: 20,
+        breedte: 50,
+        hoogte: 200
+    }
+
+    const robotBotsingRechthoek = {
+        xOffset: 50,
+        yOffset: 20,
+        breedte: 50,
+        hoogte: 100
+    }
+
+    let schermSchudden = false;
 
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
@@ -122,10 +142,23 @@
         if (event.keyCode === SPATIEBALK_CODE) {
             spatieBalkIsIngedrukt = true;
         }
+        if (event.keyCode === 37) {
+            nanonautOffsetDelta = -2;
+        }
+        if (event.keyCode === 39) {
+            nanonautOffsetDelta = 2;
+        }
+
     }
     function onKeyUp(event) {
         if (event.keyCode === SPATIEBALK_CODE) {
             spatieBalkIsIngedrukt = false;
+        }
+        if (event.keyCode === 37) {
+            nanonautOffsetDelta = 0;
+        }
+        if (event.keyCode === 39) {
+            nanonautOffsetDelta = 0;
         }
     }
 
@@ -135,6 +168,12 @@
         nanonautYSnelheid = nanonautYSnelheid + NANONAUT_Y_VERSNELLING;
 
         nanonautX = nanonautX + NANONAUT_X_SNELHEID;
+
+        nanonautOffset += nanonautOffsetDelta;
+        if (nanonautOffset < -150)
+            nanonautOffset = -150;
+        if (nanonautOffset > 150)
+            nanonautOffset = 150;
 
         if (nanonautY > (GROND_Y - NANONAUT_HOOGTE)) {
             nanonautY = GROND_Y - NANONAUT_HOOGTE;
@@ -168,10 +207,46 @@
         }
 
         // update robots
-        updateRobots();
+        schermSchudden = false;
+        let botsing = updateRobots();
+        if (botsing) {
+            schermSchudden = true;
+            if (nanonautGezondheid > 0)  {
+                nanonautGezondheid -= 0.5;
+            }
+        }
+
+
     }
+
+    function overlappenNanonautEnRobotOpEenAs(nanonautDichtbijX, nanonautVerX, robotDichtbijX, robotVerX) {
+        const nanonautOverlaptRobotDichtbij = (nanonautVerX >= robotDichtbijX) && (nanonautVerX <= robotVerX);
+        const nanonautOverlaptRobotVer = (nanonautDichtbijX >= robotDichtbijX) && (nanonautDichtbijX <= robotVerX);
+        const nanonautOverlaptRobotHelemaal = (nanonautDichtbijX <= robotDichtbijX) && (nanonautVerX >= robotVerX);
+        return nanonautOverlaptRobotDichtbij || nanonautOverlaptRobotVer || nanonautOverlaptRobotHelemaal;
+    }
+
+    function overlapenNanonautRobot(nanonautX, nanonautY, nanonautBreedte, nanonautHoogte,
+                                    robotX, robotY, robotBreedte, robotHoogte) {
+        const nanonautOverlaptRobotOpXAs = overlappenNanonautEnRobotOpEenAs(nanonautX, nanonautX + nanonautBreedte,
+            robotX, robotX + robotBreedte);
+        const nanonautOverlaptRobotOpYAs = overlappenNanonautEnRobotOpEenAs(nanonautY, nanonautY + nanonautHoogte,
+            robotY, robotY + robotHoogte);
+        return nanonautOverlaptRobotOpXAs && nanonautOverlaptRobotOpYAs
+    }
+
     function updateRobots() {
+        let nanonautBotsteOpEenRobot = false;
         for (let i = 0; i < robotData.length; i++) {
+            if (overlapenNanonautRobot(nanonautX + nanonautBotsingRechthoek.xOffset + nanonautOffset,
+                nanonautY + nanonautBotsingRechthoek.yOffset, nanonautBotsingRechthoek.breedte,
+                nanonautBotsingRechthoek.hoogte, robotData[i].x + robotBotsingRechthoek.xOffset,
+                robotData[i].y + robotBotsingRechthoek.yOffset, robotBotsingRechthoek.breedte,
+                robotBotsingRechthoek.hoogte))
+            {
+                nanonautBotsteOpEenRobot = true;
+            }
+
             robotData[i].x -= ROBOT_X_SNELHEID;
             if (spelFrameTeller % ROBOT_ANIMATIE_SNELHEID === 0) {
                 robotData[i].frameNr += 1;
@@ -198,15 +273,23 @@
                 frameNr: 0
             });
         }
+        return nanonautBotsteOpEenRobot;
     }
     // TEKENEN
     function draw() {
+        let schuddendeCameraX = cameraX
+        let schuddendeCameraY = cameraY
+        if (schermSchudden) {
+            schuddendeCameraX += (Math.random() - 0.5) * SCHERMSCHUD_RADIUS
+            schuddendeCameraY += (Math.random() - 0.5) * SCHERMSCHUD_RADIUS
+        }
+
         //teken de lucht
         c.fillStyle = 'LightSkyBlue';
         c.fillRect(0, 0, CANVAS_BREEDTE, GROND_Y - 40);
 
         //teken de achtergrond
-        const achtergrondX = -(cameraX % ACHTERGROND_BREEDTE)
+        const achtergrondX = -(schuddendeCameraX % ACHTERGROND_BREEDTE)
         c.drawImage(achtergrondAfbeelding, achtergrondX, -210)
         c.drawImage(achtergrondAfbeelding, achtergrondX + ACHTERGROND_BREEDTE, -210)
 
@@ -216,21 +299,34 @@
 
         // teken de bosjes
         for (let i=0; i<bosjesData.length; i++) {
-            c.drawImage(bosjesData[i].image, bosjesData[i].x - cameraX, GROND_Y - bosjesData[i].y - cameraY)
+            c.drawImage(bosjesData[i].image, bosjesData[i].x - schuddendeCameraX, GROND_Y - bosjesData[i].y - schuddendeCameraY)
         }
 
         // teken de robots
         for (let i=0; i<robotData.length; i++) {
-            tekenGeanimeerdeSprite(robotData[i].x - cameraX, robotData[i].y - cameraY,
-                robotData[i].frameNr, robotSpriteSheet)
+            tekenGeanimeerdeSprite(robotData[i].x - schuddendeCameraX, robotData[i].y - schuddendeCameraY,
+                robotData[i].frameNr, robotSpriteSheet, robotBotsingRechthoek)
         }
 
         // teken de nanonaut
-        tekenGeanimeerdeSprite(nanonautX - cameraX, nanonautY - cameraY,
-            nanonautFrameNr, nanonoutSpriteSheet)
+        tekenGeanimeerdeSprite(nanonautX - schuddendeCameraX + nanonautOffset, nanonautY - schuddendeCameraY,
+            nanonautFrameNr, nanonoutSpriteSheet, nanonautBotsingRechthoek)
+
+        // laat de afstand zien die de Nanonaut heeft afgelegd.
+        const nanonautAfstand = nanonautX / 100;
+        c.fillStyle = "black";
+        c.font = "48px sans-serif";
+        c.fillText(nanonautAfstand.toFixed(0) + 'm', 20, 40);
+
+
+        // teken de gezondheid
+        c.fillStyle = "red"
+        c.fillRect(400, 10, nanonautGezondheid / NANONAUT_MAX_GEZONDHEID * 380, 20);
+        c.strokeStyle = "red"
+        c.strokeRect(400, 10, 380, 20)
     }
 
-    function tekenGeanimeerdeSprite(schermX, schermY, frameNr, spriteSheet) {
+    function tekenGeanimeerdeSprite(schermX, schermY, frameNr, spriteSheet, botsingRechthoek) {
         const spriteSheetRij =  Math.floor(frameNr / spriteSheet.nrFramesPerRij);
         const spriteSheetKolom = frameNr % spriteSheet.nrFramesPerRij;
         const spriteSheetX = spriteSheetKolom * spriteSheet.spriteWidth;
@@ -238,6 +334,8 @@
         c.drawImage(spriteSheet.image, spriteSheetX, spriteSheetY,
             spriteSheet.spriteWidth, spriteSheet.spriteHeight,
             schermX, schermY, spriteSheet.spriteWidth, spriteSheet.spriteHeight)
+        //c.fillStyle = "blue"
+        //c.fillRect(schermX + botsingRechthoek.xOffset, schermY + botsingRechthoek.yOffset,botsingRechthoek.breedte, botsingRechthoek.hoogte)
     }
 
 </script>
