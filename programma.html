@@ -29,6 +29,8 @@
     const MAX_ACTIEVE_ROBOTS = 3;
     const SCHERMSCHUD_RADIUS = 16;
     const NANONAUT_MAX_GEZONDHEID = 100;
+    const SPEEL_MODUS = 0;
+    const GAME_OVER_SPELMODUS = 1;
 
     // INSTELLINGEN
     let canvas = document.createElement('canvas');
@@ -36,6 +38,7 @@
     canvas.width = CANVAS_BREEDTE;
     canvas.height = CANVAS_HOOGTE;
     document.body.appendChild(canvas);
+    let spelModus = SPEEL_MODUS
 
     // afbeeldingen loaden
     let nanonautAfbeelding = new Image();
@@ -132,7 +135,9 @@
 
     // HOOLFD-LUS
     function hoofdLus() {
-        update();
+        if (spelModus === SPEEL_MODUS) {
+            update();
+        }
         draw();
         window.requestAnimationFrame(hoofdLus);
     }
@@ -143,10 +148,10 @@
             spatieBalkIsIngedrukt = true;
         }
         if (event.keyCode === 37) {
-            nanonautOffsetDelta = -2;
+            nanonautOffsetDelta = -10;
         }
         if (event.keyCode === 39) {
-            nanonautOffsetDelta = 2;
+            nanonautOffsetDelta = 10;
         }
 
     }
@@ -213,6 +218,9 @@
             schermSchudden = true;
             if (nanonautGezondheid > 0)  {
                 nanonautGezondheid -= 0.5;
+            } else {
+                spelModus = GAME_OVER_SPELMODUS
+                schermSchudden = false
             }
         }
 
@@ -324,6 +332,12 @@
         c.fillRect(400, 10, nanonautGezondheid / NANONAUT_MAX_GEZONDHEID * 380, 20);
         c.strokeStyle = "red"
         c.strokeRect(400, 10, 380, 20)
+
+        if (spelModus === GAME_OVER_SPELMODUS) {
+            c.fillStyle = 'black'
+            c.font = '96px sans-serif'
+            c.fillText('GAME OVER', 120, 300)
+        }
     }
 
     function tekenGeanimeerdeSprite(schermX, schermY, frameNr, spriteSheet, botsingRechthoek) {
