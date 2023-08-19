@@ -37,6 +37,8 @@ let nanonautY = GROND_Y - NANONAUT_HOOGTE;
 let nanonautYSnelheid = 0;
 let spatieBalkIsIngedrukt = false;
 let nanonautIsInDeLucht = false;
+let nanonautIsSliden = false;
+let nanonautMana = 0;
 let nanonautFrameNr = 0;
 let spelFrameTeller = 0;
 let nanonautGezondheid = NANONAUT_MAX_GEZONDHEID;
@@ -44,12 +46,7 @@ let cameraX = 0;
 let nanonautOffset = 0;
 let nanonautOffsetDelta = 0;
 
-let robotData = [{
-    x: 1200,
-    y: GROND_Y - ROBOT_HOOGTE,
-    snelheid: ROBOT_X_SNELHEID * (0.5 + Math.random()),
-    frameNr: 0
-}];
+let robotData = [];
 
 let bosjesData = genereerBosjes();
 
@@ -73,6 +70,7 @@ let schermSchudden = false;
 
 window.addEventListener('keydown', onKeyDown)
 window.addEventListener('keyup', onKeyUp)
+window.addEventListener('keypress', onKeyPress)
 window.addEventListener('load', start);
 
 function start() {

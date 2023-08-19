@@ -1,25 +1,40 @@
 // UPDATEN
 function update() {
-    nanonautY = nanonautY + nanonautYSnelheid;
-    nanonautYSnelheid = nanonautYSnelheid + NANONAUT_Y_VERSNELLING;
+    if (nanonautIsSliden) {
+        if (nanonautOffset < 550) {
+            nanonautOffset += NANONAUT_SLIDEN_SNELHEID;
+        } else {
+            nanonautIsSliden = false
+            nanonautIsInDeLucht = true
+            nanonautOffsetDelta = -10
+            nanonautYSnelheid = -NANONAUT_SPRONG_SNELHEID;
+        }
+    } else {
+        nanonautY = nanonautY + nanonautYSnelheid;
+        nanonautYSnelheid = nanonautYSnelheid + NANONAUT_Y_VERSNELLING;
 
-    nanonautX = nanonautX + NANONAUT_X_SNELHEID;
+        nanonautX = nanonautX + NANONAUT_X_SNELHEID;
+        nanonautMana += NANONAUT_MANA_PER_TICK;
+        if (nanonautMana > NANONAUT_MAX_MANA) {
+            nanonautMana = NANONAUT_MAX_MANA;
+        }
 
-    nanonautOffset += nanonautOffsetDelta;
-    if (nanonautOffset < -150)
-        nanonautOffset = -150;
-    if (nanonautOffset > 450)
-        nanonautOffset = 450;
+        nanonautOffset += nanonautOffsetDelta;
+        if (nanonautOffset < -150)
+            nanonautOffset = -150;
+        if (nanonautOffset > 450)
+            nanonautOffset = 450;
 
-    if (nanonautY > (GROND_Y - NANONAUT_HOOGTE)) {
-        nanonautY = GROND_Y - NANONAUT_HOOGTE;
-        nanonautYSnelheid = 0;
-        nanonautIsInDeLucht = false;
-    }
+        if (nanonautY > (GROND_Y - NANONAUT_HOOGTE)) {
+            nanonautY = GROND_Y - NANONAUT_HOOGTE;
+            nanonautYSnelheid = 0;
+            nanonautIsInDeLucht = false;
+        }
 
-    if (spatieBalkIsIngedrukt && !nanonautIsInDeLucht) {
-        nanonautYSnelheid = -NANONAUT_SPRONG_SNELHEID;
-        nanonautIsInDeLucht = true;
+        if (spatieBalkIsIngedrukt && !nanonautIsInDeLucht) {
+            nanonautYSnelheid = -NANONAUT_SPRONG_SNELHEID;
+            nanonautIsInDeLucht = true;
+        }
     }
 
     // update de camera
@@ -76,6 +91,7 @@ function overlapenNanonautRobot(nanonautX, nanonautY, nanonautBreedte, nanonautH
 
 function updateRobots() {
     let nanonautBotsteOpEenRobot = false;
+    let robots_weg_te_halen = Array(robotData.length).fill(false)
     for (let i = 0; i < robotData.length; i++) {
         if (overlapenNanonautRobot(nanonautX + nanonautBotsingRechthoek.xOffset + nanonautOffset,
             nanonautY + nanonautBotsingRechthoek.yOffset, nanonautBotsingRechthoek.breedte,
@@ -83,7 +99,11 @@ function updateRobots() {
             robotData[i].y + robotBotsingRechthoek.yOffset, robotBotsingRechthoek.breedte,
             robotBotsingRechthoek.hoogte))
         {
-            nanonautBotsteOpEenRobot = true;
+            if (nanonautIsSliden) {
+                robots_weg_te_halen[i] = true;
+            } else {
+                nanonautBotsteOpEenRobot = true;
+            }
         }
 
         robotData[i].x -= robotData[i].snelheid;
@@ -96,16 +116,22 @@ function updateRobots() {
     }
     let robotIndex = 0;
     while (robotIndex < robotData.length) {
-        if (robotData[robotIndex].x < cameraX - ROBOT_BREEDTE) {
+        if ((robotData[robotIndex].x < cameraX - ROBOT_BREEDTE) || robots_weg_te_halen[robotIndex]) {
             robotData.splice(robotIndex, 1);
         } else {
             robotIndex += 1;
         }
     }
     if (robotData.length < MAX_ACTIEVE_ROBOTS) {
-        const laatsteRobotX = robotData[robotData.length - 1].x;
-        const nieuweRobotX = laatsteRobotX + MIN_AFSTAND_TUSSEN_ROBOTS + Math.random() * (
-            MAX_AFSTAND_TUSSEN_ROBOTS - MIN_AFSTAND_TUSSEN_ROBOTS)
+        let nieuweRobotX;
+        if (robotData.length === 0) {
+            nieuweRobotX = cameraX - ROBOT_BREEDTE + 800 + MIN_AFSTAND_TUSSEN_ROBOTS + Math.random() * (
+                MAX_AFSTAND_TUSSEN_ROBOTS - MIN_AFSTAND_TUSSEN_ROBOTS)
+        } else {
+            const laatsteRobotX = robotData[robotData.length - 1].x;
+            nieuweRobotX = laatsteRobotX + MIN_AFSTAND_TUSSEN_ROBOTS + Math.random() * (
+                MAX_AFSTAND_TUSSEN_ROBOTS - MIN_AFSTAND_TUSSEN_ROBOTS)
+        }
         robotData.push({
             x: nieuweRobotX,
             y: GROND_Y - ROBOT_HOOGTE,

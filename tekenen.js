@@ -49,10 +49,22 @@ function draw() {
     c.strokeStyle = "red"
     c.strokeRect(400, 10, 380, 20)
 
+    // teken de gezondheid
+    c.fillStyle = "green"
+    c.fillRect(400, 40, nanonautMana / NANONAUT_MAX_MANA * 380, 20);
+    c.strokeStyle = "green"
+    c.strokeRect(400, 40, 380, 20)
+
     if (spelModus === GAME_OVER_SPELMODUS) {
         c.fillStyle = 'black'
         c.font = '96px sans-serif'
         c.fillText('GAME OVER', 120, 300)
+    }
+
+    if (spelModus === PAUZE_SPELMODUS) {
+        c.fillStyle = 'black'
+        c.font = '96px sans-serif'
+        c.fillText('PAUZE', 120, 300)
     }
 }
 
